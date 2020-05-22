@@ -1,0 +1,6 @@
+package:
+  groupId: "$packageGroup"
+  artifactId: "$packageArtifact"
+  version: "$version"
+tais:
+  compatibility: ">=0.7.x"

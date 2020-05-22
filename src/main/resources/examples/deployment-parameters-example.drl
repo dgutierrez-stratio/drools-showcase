@@ -1,0 +1,27 @@
+package examples
+
+import com.stratio.tais.persistence.model.ServiceDeployment
+import com.stratio.tais.persistence.model.ServiceDeploymentParameter
+
+//
+//
+// THIS EXAMPLE ILUSTRATES HOW TO INJECT NEW DEPLOYMENT PARAMETERS IN THE MIDDLE OF A DEPLOYMENT
+//
+//
+
+rule "Include new deployment parameter during pre-requisites execution"
+salience 1000
+when
+  // ongoing deployment for any application whose service name is 'test-service'
+  $deployment: ServiceDeployment(
+		$sdId: uuid,
+		deploymentState == ServiceDeployment.STATE_EXECUTING_PREREQUISITES,
+		serviceConfiguration.serviceName == "test-service")
+  // fire this rule only if the parameter has not been added yet
+  eval($deployment.getDeploymentParameterByName("newDeploymentParameter") == null)
+then
+  // incorporate newDeploymentParameter right before the execution of pre-requisites, so that it becomes available for use
+  $deployment.addDeploymentParameter(
+     new ServiceDeploymentParameter("newDeploymentParameter", "parameter-string-value"));
+  update($deployment);
+end

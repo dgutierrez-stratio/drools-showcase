@@ -1,0 +1,31 @@
+package examples
+
+import com.stratio.tais.persistence.model.ServiceDeployment
+import com.stratio.tais.service.util.DeploymentUtils
+
+//
+//
+// THIS EXAMPLE ILUSTRATES HOW TO ADD OR MODIFY ANY MARATHON LABEL DURING DEPLOYMENT
+//
+//
+
+rule "Add Marathon labels to deployment"
+salience 1000
+when
+  // ongoing deployment for any application whose service name is 'test-service'
+  $deployment: ServiceDeployment(
+		$sdId: uuid,
+		deploymentState == ServiceDeployment.STATE_CREATING_LABELS,
+		serviceConfiguration.serviceName == "test-service")
+then
+  // create the mandatory labels (equivalent to calling super on an inherited java class when overriding method)
+  DeploymentUtils.addLabelsToDeployment($deployment);
+
+  // add custom labels to deployment
+  $deployment.getDeployment().getLabels().put("MY_CUSTOM_LABEL_ONE", "val1");
+  $deployment.getDeployment().getLabels().put("MY_CUSTOM_LABEL_TWO", "val2");
+
+  // move the deployment to its next natural stage
+  $deployment.setDeploymentState(ServiceDeployment.STATE_CHECKING_DEPLOYMENT);
+  update($deployment);
+end

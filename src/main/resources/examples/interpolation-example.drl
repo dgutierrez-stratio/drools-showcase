@@ -1,0 +1,46 @@
+package examples
+
+import com.stratio.tais.persistence.model.ServiceDeployment
+import com.stratio.tais.persistence.model.ServiceDeploymentParameter
+import com.stratio.tais.service.util.InterpolationUtils
+import com.stratio.tais.persistence.model.ErrorConcept
+import java.util.HashMap
+import java.util.List
+import java.util.ArrayList
+
+//
+//
+// THIS EXAMPLE ILUSTRATES HOW TO USE THE INTERPOLATOR TO SOLVE PLACEHOLDERS (${some.placeholder}) IN RUNTIME
+//
+//
+
+rule "Using the interpolator inside a deployment"
+when
+  // ongoing deployment for any application whose service name is 'test-service'
+  $deployment: ServiceDeployment(
+		$sdId: uuid,
+		deploymentState == ServiceDeployment.STATE_CREATING_DEPLOYMENT,
+		serviceConfiguration.serviceName == "test-service")
+  // this parameter should contain something interpolable (i.e. ${some.parameter})
+  $interpolable: ServiceDeploymentParameter(
+    name == "parameterWithInterpolation",
+    parent == $sdId)
+then
+  // any errors produced during the value interpolation will be added to this list
+  List<ErrorConcept> interpolationErrors = new ArrayList();
+  // extract the interpolation environment from the deployment
+  HashMap<String,Object> environment = $deployment.extractParametersForInterpolation();
+
+  // the value for interpolation will be extracted from the previous environment
+  String interpolatedValue = (String)InterpolationUtils.interpolateValue($interpolable.getValue(),
+    environment,
+    interpolationErrors);
+
+  // manually replace the ${someValue} with the actual value for demonstration purposes
+  $interpolable.setValue(interpolatedValue);
+  update($interpolable);
+
+  // TODO: InterpolationUtils contains other methods available for interpolation, feel free to explore.
+  $deployment.setDeploymentState(ServiceDeployment.STATE_CHECKING_DEPLOYMENT);
+  update($deployment);
+end

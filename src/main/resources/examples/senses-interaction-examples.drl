@@ -1,0 +1,141 @@
+package examples
+
+import com.stratio.tais.persistence.model.ServiceDeployment
+import com.stratio.tais.senses.service.VaultSense
+import com.stratio.tais.cns.Senses
+import com.stratio.tais.cns.exceptions.MesosSecretException
+import com.stratio.tais.service.CentralConfService
+import com.stratio.tais.senses.service.CentralSense
+import com.stratio.tais.persistence.model.GlobalParameter
+import java.util.List
+import com.stratio.tais.persistence.model.service.networking.CalicoConfigurationModel
+import com.stratio.tais.service.util.UniverseUtils
+import java.util.Optional
+import com.stratio.tais.senses.service.GosecSense
+import com.stratio.tais.persistence.model.service.gosec.GosecRegistrationRequest
+import com.stratio.tais.persistence.model.ErrorConcept
+import com.stratio.tais.persistence.model.service.sso.SSOModel
+import com.stratio.tais.senses.service.DiscoverySense
+import com.stratio.tais.persistence.model.service.discovery.ServiceDependency
+import com.stratio.tais.persistence.model.marathon.Healthiness
+import java.util.Arrays
+
+//
+//
+// THIS EXAMPLE SHOWS FEATURES ACCESSIBLE FROM THE VAULT SENSE INTERFACE
+//
+//
+
+rule "Vault sense showcase"
+when
+  $deployment: ServiceDeployment(
+		$sdId: uuid,
+		deploymentState == ServiceDeployment.STATE_CREATING_DEPLOYMENT,
+		serviceConfiguration.serviceName == "test-service")
+then
+  // utilities for secrets generation
+  VaultSense vault = Senses.access(VaultSense.class);
+
+  // user and password under /userland/passwords/command-center/sso
+  String singleSignOnPassword = vault.getSingleSignOnPassword();
+  String singleSignOnUser = vault.getSingleSignOnUser();
+
+  // password under /gosec/passwords/sso/ldap
+  String ldapPassword = vault.getLDAPPassword();
+
+  // password under /userland/passwords/operation-api/
+  vault.getSSHUser();
+  vault.getSSHPassword();
+
+  // the property SPRING_DCOS_CLUSTER_ID
+  vault.getClusterId();
+
+  // for environments where there is a mandatory prefix for deployments (this is now deprecated)
+  vault.getClusterPrefix();
+
+  // mesos secret under /dcs/passwords/{ppal}/mesos
+  try {
+    String mesosSecret = vault.getMesosSecret("ppal");
+  } catch (MesosSecretException e) {}
+
+end
+
+//
+//
+// THIS EXAMPLE SHOWS FEATURES ACCESSIBLE FROM THE SERVICE DISCOVERY SENSE INTERFACE
+//
+//
+
+rule "Service discovery sense showcase"
+when
+  $deployment: ServiceDeployment(
+		$sdId: uuid,
+		deploymentState == ServiceDeployment.STATE_CREATING_DEPLOYMENT,
+		serviceConfiguration.serviceName == "test-service")
+then
+  DiscoverySense discovery = Senses.access(DiscoverySense.class);
+
+  // queries to find discoverable services
+  List<ServiceDependency> allServices = discovery.findAll();
+  List<ServiceDependency> allZookeepers = discovery.findByServiceNameAndModel("postgres", "default");
+  List<ServiceDependency> byModel = discovery.findByModel("default");
+  List<ServiceDependency> allZookeepersWithLabel = discovery.findAll("zookeeper", "basic", Arrays.asList("DATASTORE"));
+  Optional<ServiceDependency> byInstanceName = discovery.findByInstanceName("/my-service-instance");
+  // second argument label can be extracted from DCOS_SERVICE_NAME
+  List<ServiceDependency> fullQuery = discovery.findBy("postgres", "postgres", "basic", "1.0.0", null,
+    Healthiness.HEALTHY.name(), "tenant");
+
+end
+
+//
+//
+// THIS EXAMPLE SHOWS FEATURES ACCESSIBLE FROM THE CENTRALIZED CONFIGURATION INTERFACE
+//
+//
+
+rule "Centralized configuration sense showcase"
+when
+  $deployment: ServiceDeployment(
+		$sdId: uuid,
+		deploymentState == ServiceDeployment.STATE_CREATING_DEPLOYMENT,
+		serviceConfiguration.serviceName == "test-service")
+then
+  CentralSense cc = Senses.access(CentralSense.class);
+
+  // programmatically fetch centralized configuration parameters
+  List<GlobalParameter> centralizedConfiguration = cc.fetchGlobalParameters();
+  Optional<GlobalParameter> kerberosRealm = cc.fetchGlobalParameter(UniverseUtils.GLOBAL_KERBEROS_REALM);
+
+  // programmatically fetch networks from centralized configuration
+  List<CalicoConfigurationModel> networks = cc.fetchNetworkList();
+
+end
+
+//
+//
+// THIS EXAMPLE SHOWS FEATURES ACCESSIBLE FROM THE GOSEC SENSE INTERFACE
+//
+//
+
+rule "GoSec sense showcase"
+when
+  $deployment: ServiceDeployment(
+		$sdId: uuid,
+		deploymentState == ServiceDeployment.STATE_CREATING_DEPLOYMENT,
+		serviceConfiguration.serviceName == "test-service")
+then
+  GosecSense gosec = Senses.access(GosecSense.class);
+  //
+  // These features are automatically handled by Stratio Command Center during deployments and should only be used in exceptional cases
+
+  // programmatically register a service in GoSec API.
+  Optional<ErrorConcept> registrationErrors = gosec.registerServiceInGosec(
+    new GosecRegistrationRequest("serviceType", "/my-service", "tenant"));
+
+  // programmatically remove the association of an application to a tenant
+  ErrorConcept unregisterErrors = gosec.unregisterServiceInTenant("/my-service");
+
+  // programmatically register/unregister a service in the SSO
+  gosec.registerServiceInSSO(new SSOModel("clientId", "clientSecret", "name", "serviceId"));
+  gosec.unregisterServiceInSSO("clientId");
+end
