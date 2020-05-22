@@ -1,4 +1,4 @@
-# Drools-showcase
+# Drools showcase
 
 Behold! The wonders of Drools at last in legible format for the fun of the whole family. Over the next exciting examples, and to help you cope with this delightful quarantine, we will be learning how to overcomplicate and obfuscate what should be relatively easy tasks, so... buckle up!
 
@@ -54,8 +54,16 @@ We know that you like to manipulate, twist and break the laws of nature, so we p
 
 ## Direct access to TAIS senses
 
-We could resist introducing you, the reader, into the occult arts of messing up with TAIS senses. This is not for initiates, and it requires profound knowledge of potions and spells from the Hogwarts school of witchcraft and wizardry, but it sure is worth the risk!
+We couldn't resist introducing you, the reader, into the occult arts of messing up with TAIS senses. This is not for initiates, and it requires profound knowledge of potions and spells from the Hogwarts school of witchcraft and wizardry, but it sure is worth the risk!
 
 | Example DRL | Java test classes |
 |-------------------------------------------------------------|-------------------|
 | /src/main/resources/secrets/senses-interaction-examples.drl | N/A |
+
+## Creating deploy-ready zip files
+
+This project comes with an utility to generate sample zip files ready to be uploaded into ccy-deploy-api.
+
+```bash
+version=1.0.0 make package
+```
