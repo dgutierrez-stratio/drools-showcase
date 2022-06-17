@@ -21,7 +21,7 @@
   <!--</parent>-->
 
   <properties>
-    <drools.version>7.5.0.Final</drools.version>
+    <drools.version>7.60.0.Final</drools.version>
     <cct.version>1.0.6-SNAPSHOT</cct.version>
     <marathon-client.version>0.6.3-8b43d8d</marathon-client.version>
     <mockito.version>1.10.19</mockito.version>
